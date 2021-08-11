@@ -14,7 +14,7 @@ contract Swoleth is Ownable {
     // Represents the muscle groups of the human body with corresponding exercies
     struct ExercisesByMuscleGroup {
         uint32 exerciseCount;
-        mapping (uint => Exercise) exercies;
+        Exercise[] exercies;
     }
 
     // Respesents a single exercise
@@ -82,7 +82,7 @@ contract Swoleth is Ownable {
         }
     }
     
-    function isExerciseMuscleGroupEmpty(ExercisesByMuscleGroup storage _muscleGroup) private view onlyOwner returns (bool) {
+    function isExerciseMuscleGroupEmpty(ExercisesByMuscleGroup memory _muscleGroup) public pure returns (bool) {
         if(_muscleGroup.exerciseCount == 0) {
             return true;
         } else {
@@ -90,18 +90,18 @@ contract Swoleth is Ownable {
         }
     }
 
-    function createNewMuscleGroup(string memory _muscleGroup, Exercise memory _exercise) private onlyOwner {
-        ExercisesByMuscleGroup storage muscleGroup = anatomy[_exercise.category];
+    function createNewMuscleGroup(string memory _muscleGroupName, Exercise memory _exercise) private onlyOwner {
+        ExercisesByMuscleGroup storage muscleGroup = anatomy[_muscleGroupName];
         muscleGroup.exerciseCount = 1;
-        muscleGroup.exercies[0] = _exercise;
+        muscleGroup.exercies.push(_exercise);
 
-        emit NewExerciseByMuscleGroupCreated(_muscleGroup, _exercise.category, _exercise.name);
+        emit NewExerciseByMuscleGroupCreated(_muscleGroupName, _exercise.category, _exercise.name);
     }
 
     function addExerciseToExistingMuscleGroup(ExercisesByMuscleGroup storage _muscleGroup, Exercise memory _exercise, string memory _muscleGroupName) private onlyOwner {
         uint32 exerciseCount = _muscleGroup.exerciseCount;
         _muscleGroup.exerciseCount = exerciseCount + 1;
-        _muscleGroup.exercies[exerciseCount] = _exercise;
+        _muscleGroup.exercies.push(_exercise);
 
         emit NewExerciseAddedToMuscleGroup(_muscleGroupName, _exercise.category, _exercise.name, _muscleGroup.exerciseCount);
     }
@@ -109,6 +109,11 @@ contract Swoleth is Ownable {
     function getExercise(string memory _name) public view returns (string memory, string memory, string memory) {
         Exercise storage exercise = exercises[_name];
         return (exercise.name, exercise.description, exercise.category);
+    }
+
+    function getExercisesByMuscleGroup(string memory _muscleGroup) public view returns (uint32 exerciseCount, Exercise [] memory) {
+        ExercisesByMuscleGroup storage exerciseByMuscleGroup = anatomy[_muscleGroup];
+        return (exerciseByMuscleGroup.exerciseCount, exerciseByMuscleGroup.exercies);
     }
 
     function ownerOf() public view returns (address) {
