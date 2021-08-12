@@ -4,8 +4,7 @@ const { expectRevert } = require('@openzeppelin/test-helpers');
 var Swoleth = artifacts.require("./Swoleth.sol");
 
 contract('Swoleth', accounts => {
-    const NewExerciseByMuscleGroupCreatedEvent = "NewExerciseByMuscleGroupCreated";
-    const NewExerciseAddedToMuscleGroupEvent = "NewExerciseAddedToMuscleGroup";
+    const NewExerciseAddedEvent = "NewExerciseAdded";
 
     let swolethInstance;
     let [alice, bob] = accounts;
@@ -48,12 +47,13 @@ contract('Swoleth', accounts => {
         // const gasPriceCreateExercise = await swolethInstance.addExercise.estimateGas(exercise.name, exercise.description, exercise.category, exercise.muscleGroup);
         // console.log(gasPriceCreateExercise);
 
-        result = await swolethInstance.addExercise(exercise.name, exercise.description, exercise.category, exercise.muscleGroup)
+        result = await swolethInstance.addExercise(exercise.name, exercise.description, exercise.category, exercise.muscleGroup);
         
         expect(result.receipt.status).to.equal(true, "Transaction was not successful");
         expect(result.logs[0].args.muscleGroup).to.equal(exercise.muscleGroup, "Incorrect muscle group was returned");
         expect(result.logs[0].args.category).to.equal(exercise.category, "Incorrect exercise name was returned");
         expect(result.logs[0].args.name).to.equal(exercise.name, "Incorrect exercise name was returned");
+        expect(result.logs[0].args.description).to.equal(exercise.description, "Incorrect exercise description was returned");
       });
 
       it("Creates multiple exercises for a single muscleGroup", async () => {
@@ -79,33 +79,23 @@ contract('Swoleth', accounts => {
         };
 
         result1 = await instance.addExercise(flatBenchPress.name, flatBenchPress.description, flatBenchPress.category, flatBenchPress.muscleGroup);
-        expect(result1.logs[0].event).to.equal(NewExerciseByMuscleGroupCreatedEvent, "Incorrect event emitted for create muscle group event");
+        expect(result1.logs[0].event).to.equal(NewExerciseAddedEvent, "Incorrect event emitted for create muscle group event");
         exercise1 = await instance.getExercise(flatBenchPress.name);
 
         result2 = await instance.addExercise(inclineBenchPress.name, inclineBenchPress.description, inclineBenchPress.category, inclineBenchPress.muscleGroup);
-        expect(result2.logs[0].event).to.equal(NewExerciseAddedToMuscleGroupEvent, "Incorrect event emitted for adding an excercise to an existing muscle group");
+        expect(result2.logs[0].event).to.equal(NewExerciseAddedEvent, "Incorrect event emitted for create muscle group event");
         exercise2 = await instance.getExercise(inclineBenchPress.name);
 
         // Test individual exercises were added correctly
-        expect(exercise1[0]).to.equal(flatBenchPress.name, "Exercise name not properly added");
-        expect(exercise1[1]).to.equal(flatBenchPress.description, "Exercise description not properly added");
-        expect(exercise1[2]).to.equal(flatBenchPress.category, "Exercise category not properly added");
-
-        expect(exercise2[0]).to.equal(inclineBenchPress.name, "Exercise name not properly added");
-        expect(exercise2[1]).to.equal(inclineBenchPress.description, "Exercise description not properly added");
-        expect(exercise2[2]).to.equal(inclineBenchPress.category, "Exercise category not properly added");
-
-        // Test if exercises were correctly added to the same muscle group
-        muscleGroup = await instance.getExercisesByMuscleGroup(CHEST);
-        expect(muscleGroup[0].toNumber()).to.equal(2, "Exercise count incorrect for muscleGroup");
+        expect(exercise1[0]).to.equal(flatBenchPress.muscleGroup, "Exercise musclegroup not properly added");
+        expect(exercise1[1]).to.equal(flatBenchPress.category, "Exercise category not properly added");
+        expect(exercise1[2]).to.equal(flatBenchPress.name, "Exercise name not properly added");
+        expect(exercise1[3]).to.equal(flatBenchPress.description, "Exercise description not properly added");
         
-        expect(muscleGroup[1][0].name).to.equal(flatBenchPress.name, "Exercise name not properly added");
-        expect(muscleGroup[1][0].description).to.equal(flatBenchPress.description, "Exercise description not properly added");
-        expect(muscleGroup[1][0].category).to.equal(flatBenchPress.category, "Exercise category not properly added");
-
-        expect(muscleGroup[1][1].name).to.equal(inclineBenchPress.name, "Exercise name not properly added");
-        expect(muscleGroup[1][1].description).to.equal(inclineBenchPress.description, "Exercise description not properly added");
-        expect(muscleGroup[1][1].category).to.equal(inclineBenchPress.category, "Exercise category not properly added");
+        expect(exercise2[0]).to.equal(inclineBenchPress.muscleGroup, "Exercise musclegroup not properly added");
+        expect(exercise2[1]).to.equal(inclineBenchPress.category, "Exercise category not properly added");
+        expect(exercise2[2]).to.equal(inclineBenchPress.name, "Exercise name not properly added");
+        expect(exercise2[3]).to.equal(inclineBenchPress.description, "Exercise description not properly added");
       });
 
 
@@ -133,36 +123,23 @@ contract('Swoleth', accounts => {
         };
 
         result1 = await instance.addExercise(flatBenchPress.name, flatBenchPress.description, flatBenchPress.category, flatBenchPress.muscleGroup);
-        expect(result1.logs[0].event).to.equal(NewExerciseByMuscleGroupCreatedEvent, "Incorrect event emitted for create muscle group event");
+        expect(result1.logs[0].event).to.equal(NewExerciseAddedEvent, "Incorrect event emitted for create muscle group event");
         exercise1 = await instance.getExercise(flatBenchPress.name);
 
         result2 = await instance.addExercise(deadlift.name, deadlift.description, deadlift.category, deadlift.muscleGroup);
-        expect(result2.logs[0].event).to.equal(NewExerciseByMuscleGroupCreatedEvent, "Incorrect event emitted for create muscle group event");
+        expect(result2.logs[0].event).to.equal(NewExerciseAddedEvent, "Incorrect event emitted for create muscle group event");
         exercise2 = await instance.getExercise(deadlift.name);
 
         // Test individual exercises were added correctly
-        expect(exercise1[0]).to.equal(flatBenchPress.name, "Exercise name not properly added");
-        expect(exercise1[1]).to.equal(flatBenchPress.description, "Exercise description not properly added");
-        expect(exercise1[2]).to.equal(flatBenchPress.category, "Exercise category not properly added");
+        expect(exercise1[0]).to.equal(flatBenchPress.muscleGroup, "Exercise musclegroup not properly added");
+        expect(exercise1[1]).to.equal(flatBenchPress.category, "Exercise category not properly added");
+        expect(exercise1[2]).to.equal(flatBenchPress.name, "Exercise name not properly added");
+        expect(exercise1[3]).to.equal(flatBenchPress.description, "Exercise description not properly added");
 
-        expect(exercise2[0]).to.equal(deadlift.name, "Exercise name not properly added");
-        expect(exercise2[1]).to.equal(deadlift.description, "Exercise description not properly added");
-        expect(exercise2[2]).to.equal(deadlift.category, "Exercise category not properly added");
-
-        // Test if exercises were correctly added to the respective muscle group
-        chestMuscleGroup = await instance.getExercisesByMuscleGroup(CHEST);
-        expect(chestMuscleGroup[0].toNumber()).to.equal(1, "Exercise count incorrect for muscleGroup");
-        
-        expect(chestMuscleGroup[1][0].name).to.equal(flatBenchPress.name, "Exercise name not properly added");
-        expect(chestMuscleGroup[1][0].description).to.equal(flatBenchPress.description, "Exercise description not properly added");
-        expect(chestMuscleGroup[1][0].category).to.equal(flatBenchPress.category, "Exercise category not properly added");
-
-        backMuscleGroup = await instance.getExercisesByMuscleGroup(BACK);
-        expect(backMuscleGroup[0].toNumber()).to.equal(1, "Exercise count incorrect for muscleGroup");
-
-        expect(backMuscleGroup[1][0].name).to.equal(deadlift.name, "Exercise name not properly added");
-        expect(backMuscleGroup[1][0].description).to.equal(deadlift.description, "Exercise description not properly added");
-        expect(backMuscleGroup[1][0].category).to.equal(deadlift.category, "Exercise category not properly added");
+        expect(exercise2[0]).to.equal(deadlift.muscleGroup, "Exercise musclegroup not properly added");
+        expect(exercise2[1]).to.equal(deadlift.category, "Exercise category not properly added");
+        expect(exercise2[2]).to.equal(deadlift.name, "Exercise name not properly added");
+        expect(exercise2[3]).to.equal(deadlift.description, "Exercise description not properly added");
       });
     })
 
@@ -201,9 +178,10 @@ contract('Swoleth', accounts => {
 
         await instance.addExercise(goodExercise.name, goodExercise.description, goodExercise.category, goodExercise.muscleGroup);
         exercise = await instance.getExercise(goodExercise.name);
-        expect(exercise[0]).to.equal(goodExercise.name, "Exercise name not properly added");
-        expect(exercise[1]).to.equal(goodExercise.description, "Exercise description not properly added");
-        expect(exercise[2]).to.equal(goodExercise.category, "Exercise category not properly added");
+        expect(exercise[0]).to.equal(goodExercise.muscleGroup, "Exercise musclegroup not properly added");
+        expect(exercise[1]).to.equal(goodExercise.category, "Exercise category not properly added");
+        expect(exercise[2]).to.equal(goodExercise.name, "Exercise name not properly added");
+        expect(exercise[3]).to.equal(goodExercise.description, "Exercise description not properly added");
 
         await expectRevert(instance.addExercise(goodExercise.name, goodExercise.description, goodExercise.category, goodExercise.muscleGroup), "revert");
       });

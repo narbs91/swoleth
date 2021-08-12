@@ -8,24 +8,16 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  */
 contract Swoleth is Ownable {
 
-    event NewExerciseByMuscleGroupCreated(string muscleGroup, string category, string name);
-    event NewExerciseAddedToMuscleGroup(string muscleGroup, string category, string name, uint32 exerciseCount);
-
-    // Represents the muscle groups of the human body with corresponding exercies
-    struct ExercisesByMuscleGroup {
-        uint32 exerciseCount;
-        Exercise[] exercies;
-    }
+    event NewExerciseAdded(string muscleGroup, string category, string name, string description);
 
     // Respesents a single exercise
     struct Exercise {
+        string muscleGroup;
+        string category;
         string name;
         string description;
-        string category;
     }
 
-    // Represents the human body made up of muscle groups
-    mapping (string => ExercisesByMuscleGroup) public anatomy;
     mapping (string => Exercise) public exercises;
 
     // Metadata for exercises
@@ -62,58 +54,15 @@ contract Swoleth is Ownable {
         require(keccak256(abi.encodePacked(exerciseCategory[_category])) == keccak256(abi.encodePacked(_category)));
         require(keccak256(abi.encodePacked(exerciseMuscleGroup[_muscleGroupName])) == keccak256(abi.encodePacked(_muscleGroupName)));
 
-        Exercise memory exercise = Exercise(_name, _description, _category);
+        Exercise memory exercise = Exercise(_muscleGroupName, _category, _name, _description);
         exercises[_name] = exercise;
 
-        addExerciseToMuscleGroup(_muscleGroupName, exercise);
+        emit NewExerciseAdded(_muscleGroupName, _category, _name, _description);
     }
 
-    /**
-        @dev function to add an exercise to a muscle group
-     */
-    function addExerciseToMuscleGroup(string memory _muscleGroupName, Exercise memory _exercise) private onlyOwner {
-        ExercisesByMuscleGroup storage exerciseByMuscleGroup = anatomy[_muscleGroupName];
-        bool isMuscleGroupEmpty = isExerciseMuscleGroupEmpty(exerciseByMuscleGroup);
-
-        if (isMuscleGroupEmpty) {
-            createNewMuscleGroup(_muscleGroupName, _exercise);
-        } else {
-            addExerciseToExistingMuscleGroup(exerciseByMuscleGroup, _exercise, _muscleGroupName);
-        }
-    }
-    
-    function isExerciseMuscleGroupEmpty(ExercisesByMuscleGroup memory _muscleGroup) public pure returns (bool) {
-        if(_muscleGroup.exerciseCount == 0) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    function createNewMuscleGroup(string memory _muscleGroupName, Exercise memory _exercise) private onlyOwner {
-        ExercisesByMuscleGroup storage muscleGroup = anatomy[_muscleGroupName];
-        muscleGroup.exerciseCount = 1;
-        muscleGroup.exercies.push(_exercise);
-
-        emit NewExerciseByMuscleGroupCreated(_muscleGroupName, _exercise.category, _exercise.name);
-    }
-
-    function addExerciseToExistingMuscleGroup(ExercisesByMuscleGroup storage _muscleGroup, Exercise memory _exercise, string memory _muscleGroupName) private onlyOwner {
-        uint32 exerciseCount = _muscleGroup.exerciseCount;
-        _muscleGroup.exerciseCount = exerciseCount + 1;
-        _muscleGroup.exercies.push(_exercise);
-
-        emit NewExerciseAddedToMuscleGroup(_muscleGroupName, _exercise.category, _exercise.name, _muscleGroup.exerciseCount);
-    }
-
-    function getExercise(string memory _name) public view returns (string memory, string memory, string memory) {
+    function getExercise(string memory _name) public view returns (string memory, string memory, string memory, string memory) {
         Exercise storage exercise = exercises[_name];
-        return (exercise.name, exercise.description, exercise.category);
-    }
-
-    function getExercisesByMuscleGroup(string memory _muscleGroup) public view returns (uint32 exerciseCount, Exercise [] memory) {
-        ExercisesByMuscleGroup storage exerciseByMuscleGroup = anatomy[_muscleGroup];
-        return (exerciseByMuscleGroup.exerciseCount, exerciseByMuscleGroup.exercies);
+        return (exercise.muscleGroup, exercise.category, exercise.name, exercise.description);
     }
 
     function ownerOf() public view returns (address) {
