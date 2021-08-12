@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract Swoleth is Ownable {
 
     event NewExerciseAdded(string muscleGroup, string category, string name, string description);
+    event ExerciseDeleted(string name);
 
     // Respesents a single exercise
     struct Exercise {
@@ -47,9 +48,9 @@ contract Swoleth is Ownable {
         @dev function to add an exercise with a name, description, category and muscle group
      */
     function addExercise(string memory _name, 
-                        string memory _description, 
-                        string memory _category, 
-                        string memory _muscleGroupName) public onlyOwner {
+                         string memory _description, 
+                         string memory _category, 
+                         string memory _muscleGroupName) public onlyOwner {
         require(keccak256(abi.encodePacked(exercises[_name].name)) != keccak256(abi.encodePacked(_name)));
         require(keccak256(abi.encodePacked(exerciseCategory[_category])) == keccak256(abi.encodePacked(_category)));
         require(keccak256(abi.encodePacked(exerciseMuscleGroup[_muscleGroupName])) == keccak256(abi.encodePacked(_muscleGroupName)));
@@ -63,6 +64,16 @@ contract Swoleth is Ownable {
     function getExercise(string memory _name) public view returns (string memory, string memory, string memory, string memory) {
         Exercise storage exercise = exercises[_name];
         return (exercise.muscleGroup, exercise.category, exercise.name, exercise.description);
+    }
+
+    function deleteExercise(string memory _name) public onlyOwner returns (bool) {
+        require(keccak256(abi.encodePacked(exercises[_name].name)) == keccak256(abi.encodePacked(_name)));
+
+        delete exercises[_name];
+
+        emit ExerciseDeleted(_name);
+
+        return true;
     }
 
     function ownerOf() public view returns (address) {
