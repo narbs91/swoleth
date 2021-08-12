@@ -5,6 +5,7 @@ var Swoleth = artifacts.require("./Swoleth.sol");
 
 contract('Swoleth', accounts => {
     const NewExerciseAddedEvent = "NewExerciseAdded";
+    const ExerciseDeletedEvent = "ExerciseDeleted";
 
     let swolethInstance;
     let [alice, bob] = accounts;
@@ -62,7 +63,6 @@ contract('Swoleth', accounts => {
 
         let exercise1, exercise2;
         let result1, result2;
-        let muscleGroup;
 
         const flatBenchPress = {
           name: "Bench press(flat)",
@@ -104,7 +104,6 @@ contract('Swoleth', accounts => {
         const BACK = "BACK";
         const instance = swolethInstance;
 
-        let chestMuscleGroup, backMuscleGroup;
         let exercise1, exercise2;
         let result1, result2;
 
@@ -184,6 +183,33 @@ contract('Swoleth', accounts => {
         expect(exercise[3]).to.equal(goodExercise.description, "Exercise description not properly added");
 
         await expectRevert(instance.addExercise(goodExercise.name, goodExercise.description, goodExercise.category, goodExercise.muscleGroup), "revert");
+      });
+    })
+
+    context("Testing exercise deletion", async () => {
+      const squat = {
+        name: "Squat",
+        description: "Barbell squat",
+        category: "BARBELL",
+        muscleGroup: "BACK"
+      }
+
+      it("deletes an exercise", async () => {
+        const instance = swolethInstance;
+
+        await instance.addExercise(squat.name, squat.description, squat.category, squat.muscleGroup);
+
+        const result = await instance.deleteExercise(squat.name);
+
+        expect(result.receipt.status).to.equal(true, "Exercise was not deleted");
+        expect(result.logs[0].event).to.equal(ExerciseDeletedEvent, "Incorrect event emitted after exercise was deleted");
+        expect(result.logs[0].args[0]).to.equal(squat.name, "Incorrect exercise name was emitted after deletion");
+
+        await expectRevert(swolethInstance.deleteExercise(squat.name), "revert");
+      });
+
+      it("doesn't delete an exercise that doesn't exist", async () => {
+        await expectRevert(swolethInstance.deleteExercise(squat.name), "revert");
       });
     })
 })
