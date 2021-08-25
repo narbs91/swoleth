@@ -4,7 +4,7 @@ const { expectRevert } = require('@openzeppelin/test-helpers');
 var Swoleth = artifacts.require("./Swoleth.sol");
 
 contract('Swoleth', accounts => {
-    const NewExerciseAddedEvent = "NewExerciseAdded";
+    const ExerciseUpsertedEvent = "ExerciseUpserted";
     const ExerciseDeletedEvent = "ExerciseDeleted";
 
     let swolethInstance;
@@ -18,13 +18,13 @@ contract('Swoleth', accounts => {
 
     context("Fresh contract deployment scenario", async () => {
       it("It should have categories", async () => {
-        const machineCategory = await swolethInstance.exerciseCategory.call("MACHINE");
+        const machineCategory = await swolethInstance.exerciseCategoryMap.call("MACHINE");
         expect(machineCategory).to.equal("MACHINE", "Categories not properly loaded");
       });
 
 
       it("should have muscle groups", async () => {
-        const chestMuscleGroup = await swolethInstance.exerciseMuscleGroup.call("CHEST");
+        const chestMuscleGroup = await swolethInstance.exerciseMuscleGroupMap.call("CHEST");
         expect(chestMuscleGroup).to.equal("CHEST", "MusclesGroups not properly set");
       });
 
@@ -44,13 +44,14 @@ contract('Swoleth', accounts => {
         };
 
         let result;
-
+        const key = "biscepCurl-DUMBBELL";
         // const gasPriceCreateExercise = await swolethInstance.addExercise.estimateGas(exercise.name, exercise.description, exercise.category, exercise.muscleGroup);
         // console.log(gasPriceCreateExercise);
 
-        result = await swolethInstance.addExercise(exercise.name, exercise.description, exercise.category, exercise.muscleGroup);
+        result = await swolethInstance.upsertExercise(key, exercise.name, exercise.description, exercise.category, exercise.muscleGroup);
         
         expect(result.receipt.status).to.equal(true, "Transaction was not successful");
+        expect(result.logs[0].args.key).to.equal(key, "Incorrect exercise key was returned");
         expect(result.logs[0].args.muscleGroup).to.equal(exercise.muscleGroup, "Incorrect muscle group was returned");
         expect(result.logs[0].args.category).to.equal(exercise.category, "Incorrect exercise name was returned");
         expect(result.logs[0].args.name).to.equal(exercise.name, "Incorrect exercise name was returned");
@@ -78,13 +79,16 @@ contract('Swoleth', accounts => {
           muscleGroup: CHEST
         };
 
-        result1 = await instance.addExercise(flatBenchPress.name, flatBenchPress.description, flatBenchPress.category, flatBenchPress.muscleGroup);
-        expect(result1.logs[0].event).to.equal(NewExerciseAddedEvent, "Incorrect event emitted for create muscle group event");
-        exercise1 = await instance.getExercise(flatBenchPress.name);
+        const flatBenchKey = "flat-bench-DUMBBELL";
+        const inclineBenchKey = "incline-bench-DUMBBELL";
 
-        result2 = await instance.addExercise(inclineBenchPress.name, inclineBenchPress.description, inclineBenchPress.category, inclineBenchPress.muscleGroup);
-        expect(result2.logs[0].event).to.equal(NewExerciseAddedEvent, "Incorrect event emitted for create muscle group event");
-        exercise2 = await instance.getExercise(inclineBenchPress.name);
+        result1 = await instance.upsertExercise(flatBenchKey, flatBenchPress.name, flatBenchPress.description, flatBenchPress.category, flatBenchPress.muscleGroup);
+        expect(result1.logs[0].event).to.equal(ExerciseUpsertedEvent, "Incorrect event emitted for upsert event");
+        exercise1 = await instance.getExercise(flatBenchKey);
+
+        result2 = await instance.upsertExercise(inclineBenchKey, inclineBenchPress.name, inclineBenchPress.description, inclineBenchPress.category, inclineBenchPress.muscleGroup);
+        expect(result2.logs[0].event).to.equal(ExerciseUpsertedEvent, "Incorrect event emitted for upsert event");
+        exercise2 = await instance.getExercise(inclineBenchKey);
 
         // Test individual exercises were added correctly
         expect(exercise1[0]).to.equal(flatBenchPress.muscleGroup, "Exercise musclegroup not properly added");
@@ -121,13 +125,16 @@ contract('Swoleth', accounts => {
           muscleGroup: BACK
         };
 
-        result1 = await instance.addExercise(flatBenchPress.name, flatBenchPress.description, flatBenchPress.category, flatBenchPress.muscleGroup);
-        expect(result1.logs[0].event).to.equal(NewExerciseAddedEvent, "Incorrect event emitted for create muscle group event");
-        exercise1 = await instance.getExercise(flatBenchPress.name);
+        const flatBenchKey = "flat-bench-DUMBBELL";
+        const deadliftKey = "deadlift-BARBELL";
 
-        result2 = await instance.addExercise(deadlift.name, deadlift.description, deadlift.category, deadlift.muscleGroup);
-        expect(result2.logs[0].event).to.equal(NewExerciseAddedEvent, "Incorrect event emitted for create muscle group event");
-        exercise2 = await instance.getExercise(deadlift.name);
+        result1 = await instance.upsertExercise(flatBenchKey, flatBenchPress.name, flatBenchPress.description, flatBenchPress.category, flatBenchPress.muscleGroup);
+        expect(result1.logs[0].event).to.equal(ExerciseUpsertedEvent, "Incorrect event emitted for upsert event");
+        exercise1 = await instance.getExercise(flatBenchKey);
+
+        result2 = await instance.upsertExercise(deadliftKey, deadlift.name, deadlift.description, deadlift.category, deadlift.muscleGroup);
+        expect(result2.logs[0].event).to.equal(ExerciseUpsertedEvent, "Incorrect event emitted for upsert event");
+        exercise2 = await instance.getExercise(deadliftKey);
 
         // Test individual exercises were added correctly
         expect(exercise1[0]).to.equal(flatBenchPress.muscleGroup, "Exercise musclegroup not properly added");
@@ -139,6 +146,40 @@ contract('Swoleth', accounts => {
         expect(exercise2[1]).to.equal(deadlift.category, "Exercise category not properly added");
         expect(exercise2[2]).to.equal(deadlift.name, "Exercise name not properly added");
         expect(exercise2[3]).to.equal(deadlift.description, "Exercise description not properly added");
+      });
+    })
+
+
+    context("Tesing updating an exercise", async () => {
+
+      const flatBenchPressVersion1 = {
+        name: "Bench press(flat)",
+        description: "Flat dumbbell bench press",
+        category: "DUMBBELL",
+        muscleGroup: "CHEST"
+      };
+
+      const flatBenchPressVersion2 = {
+        name: "Bench press(flat)",
+        description: "Flat dumbbell bench press updated",
+        category: "DUMBBELL",
+        muscleGroup: "CHEST"
+      };
+
+      const flatBenchKey = "flat-bench-DUMBBELL";
+
+      it("should update an exercise", async () => {
+        const instance = swolethInstance;
+        let exercise;
+
+        await instance.upsertExercise(flatBenchKey, flatBenchPressVersion1.name, flatBenchPressVersion1.description, flatBenchPressVersion1.category, flatBenchPressVersion1.muscleGroup);
+        await instance.upsertExercise(flatBenchKey, flatBenchPressVersion2.name, flatBenchPressVersion2.description, flatBenchPressVersion2.category, flatBenchPressVersion2.muscleGroup);
+        
+        exercise = await instance.getExercise(flatBenchKey);
+        expect(exercise[0]).to.equal(flatBenchPressVersion2.muscleGroup, "Exercise musclegroup not properly updated");
+        expect(exercise[1]).to.equal(flatBenchPressVersion2.category, "Exercise category not properly updated");
+        expect(exercise[2]).to.equal(flatBenchPressVersion2.name, "Exercise name not properly updated");
+        expect(exercise[3]).to.equal(flatBenchPressVersion2.description, "Exercise description not properly updated");
       });
     })
 
@@ -159,30 +200,31 @@ contract('Swoleth', accounts => {
         muscleGroup: "ARMS"
       };
 
+      const goodExerciseKey = "good-exercise-key";
+      const badExerciseKey = "bad-exercise-key";
+
       it("should not insert an exercise by non-owner", async () => {
-        await expectRevert(swolethInstance.addExercise.call(badExercise.name, badExercise.description, badExercise.category, badExercise.muscleGroup, {from: bob}), "Ownable: caller is not the owner");
+        await expectRevert(swolethInstance.upsertExercise.call(badExerciseKey, badExercise.name, badExercise.description, badExercise.category, badExercise.muscleGroup, {from: bob}), "Ownable: caller is not the owner");
+      });
+
+      it("should not insert an exercise when name is empty string", async () => {
+        await expectRevert(swolethInstance.upsertExercise.call(goodExerciseKey, "", goodExercise.description, goodExercise.category, goodExercise.muscleGroup), "revert");
+      });
+
+      it("should not insert an exercise when category is empty string", async () => {
+        await expectRevert(swolethInstance.upsertExercise.call(goodExerciseKey, goodExercise.name, goodExercise.description, "", goodExercise.muscleGroup), "revert");
+      });
+
+      it("should not insert an exercise when musclegroup is empty string", async () => {
+        await expectRevert(swolethInstance.upsertExercise.call(goodExerciseKey, goodExercise.name, goodExercise.description, goodExercise.category, ""), "revert");
       });
 
       it("should not insert an exercise with a non-existent category", async () => {
-        await expectRevert(swolethInstance.addExercise.call(badExercise.name, badExercise.description, badExercise.category, "ARMS"), "revert");
+        await expectRevert(swolethInstance.upsertExercise.call(badExerciseKey, badExercise.name, badExercise.description, badExercise.category, "ARMS"), "revert");
       });
 
       it("should not insert an exercise with a non-existent muscle group", async () => {
-        await expectRevert(swolethInstance.addExercise.call(badExercise.name, badExercise.description, "MACHINE", badExercise.muscleGroup), "revert");
-      });
-
-      it("should not insert a duplicate exercise", async () => {
-        const instance = swolethInstance;
-        let exercise;
-
-        await instance.addExercise(goodExercise.name, goodExercise.description, goodExercise.category, goodExercise.muscleGroup);
-        exercise = await instance.getExercise(goodExercise.name);
-        expect(exercise[0]).to.equal(goodExercise.muscleGroup, "Exercise musclegroup not properly added");
-        expect(exercise[1]).to.equal(goodExercise.category, "Exercise category not properly added");
-        expect(exercise[2]).to.equal(goodExercise.name, "Exercise name not properly added");
-        expect(exercise[3]).to.equal(goodExercise.description, "Exercise description not properly added");
-
-        await expectRevert(instance.addExercise(goodExercise.name, goodExercise.description, goodExercise.category, goodExercise.muscleGroup), "revert");
+        await expectRevert(swolethInstance.upsertExercise.call(badExerciseKey, badExercise.name, badExercise.description, "MACHINE", badExercise.muscleGroup), "revert");
       });
     })
 
@@ -194,22 +236,24 @@ contract('Swoleth', accounts => {
         muscleGroup: "BACK"
       }
 
+      const squatKey = "squat-BARBELL"
+
       it("deletes an exercise", async () => {
         const instance = swolethInstance;
 
-        await instance.addExercise(squat.name, squat.description, squat.category, squat.muscleGroup);
+        await instance.upsertExercise(squatKey, squat.name, squat.description, squat.category, squat.muscleGroup);
 
-        const result = await instance.deleteExercise(squat.name);
+        const result = await instance.deleteExercise(squatKey);
 
         expect(result.receipt.status).to.equal(true, "Exercise was not deleted");
         expect(result.logs[0].event).to.equal(ExerciseDeletedEvent, "Incorrect event emitted after exercise was deleted");
-        expect(result.logs[0].args[0]).to.equal(squat.name, "Incorrect exercise name was emitted after deletion");
+        expect(result.logs[0].args[0]).to.equal(squatKey, "Incorrect exercise key was emitted after deletion");
 
-        await expectRevert(swolethInstance.deleteExercise(squat.name), "revert");
+        await expectRevert(swolethInstance.deleteExercise(squatKey), "revert");
       });
 
       it("doesn't delete an exercise that doesn't exist", async () => {
-        await expectRevert(swolethInstance.deleteExercise(squat.name), "revert");
+        await expectRevert(swolethInstance.deleteExercise(squatKey), "revert");
       });
     })
 })

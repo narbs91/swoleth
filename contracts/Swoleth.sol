@@ -4,12 +4,12 @@ pragma solidity >=0.8.0 <0.9.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
-    @dev contract representing an database for exercises meant to be the decentralized source of truth for fitness based dApps
+    @dev contract representing a decentralized database for exercises meant to be the source of truth for fitness based dApps
  */
 contract Swoleth is Ownable {
 
-    event NewExerciseAdded(string muscleGroup, string category, string name, string description);
-    event ExerciseDeleted(string name);
+    event ExerciseUpserted(string key, string muscleGroup, string category, string name, string description);
+    event ExerciseDeleted(string key);
 
     // Respesents a single exercise
     struct Exercise {
@@ -17,63 +17,90 @@ contract Swoleth is Ownable {
         string category;
         string name;
         string description;
+        bool isCreated;
     }
 
     mapping (string => Exercise) public exercises;
 
-    // Metadata for exercises
-    mapping (string => string) public exerciseCategory;
-    mapping (string => string) public exerciseMuscleGroup;
+    // Metadata for related to exercises
+    mapping (string => string) public exerciseCategoryMap;
+    mapping (string => string) public exerciseMuscleGroupMap;
 
     address public _owner;
 
     constructor() {
         _owner  = msg.sender;
 
-        exerciseCategory["MACHINE"] = "MACHINE";
-        exerciseCategory["BARBELL"] = "BARBELL";
-        exerciseCategory["DUMBBELL"] = "DUMBBELL";
-        exerciseCategory["BODYWEIGHT"] = "BODYWEIGHT";
-        exerciseCategory["BANDS"] = "BANDS";
+        exerciseCategoryMap["MACHINE"] = "MACHINE";
+        exerciseCategoryMap["BARBELL"] = "BARBELL";
+        exerciseCategoryMap["DUMBBELL"] = "DUMBBELL";
+        exerciseCategoryMap["BODYWEIGHT"] = "BODYWEIGHT";
+        exerciseCategoryMap["BANDS"] = "BANDS";
         
-        exerciseMuscleGroup["BACK"] = "BACK";
-        exerciseMuscleGroup["CHEST"] = "CHEST";
-        exerciseMuscleGroup["LEGS"] = "LEGS";
-        exerciseMuscleGroup["ARMS"] = "ARMS";
-        exerciseMuscleGroup["SHOULDERS"] = "SHOULDERS";
-        exerciseMuscleGroup["CORE"] = "CORE";
+        exerciseMuscleGroupMap["BACK"] = "BACK";
+        exerciseMuscleGroupMap["CHEST"] = "CHEST";
+        exerciseMuscleGroupMap["LEGS"] = "LEGS";
+        exerciseMuscleGroupMap["ARMS"] = "ARMS";
+        exerciseMuscleGroupMap["SHOULDERS"] = "SHOULDERS";
+        exerciseMuscleGroupMap["CORE"] = "CORE";
     }
 
     /**
-        @dev function to add an exercise with a name, description, category and muscle group
+        @dev function to add/update an exercise with a name, description, category and muscle group
      */
-    function addExercise(string memory _name, 
-                         string memory _description, 
-                         string memory _category, 
-                         string memory _muscleGroupName) public onlyOwner {
-        require(keccak256(abi.encodePacked(exercises[_name].name)) != keccak256(abi.encodePacked(_name)));
-        require(keccak256(abi.encodePacked(exerciseCategory[_category])) == keccak256(abi.encodePacked(_category)));
-        require(keccak256(abi.encodePacked(exerciseMuscleGroup[_muscleGroupName])) == keccak256(abi.encodePacked(_muscleGroupName)));
+    function upsertExercise(
+        string memory _key,
+        string memory _name, 
+        string memory _description, 
+        string memory _category, 
+        string memory _muscleGroupName
+    ) 
+        public 
+        onlyOwner
+    {
+        require(bytes(_key).length > 0, "_key is a required field and cannot be empty");
+        require(bytes(_name).length > 0, "_name is a required field and cannot be empty");
+        require(bytes(_category).length > 0, "_category is a requires field and cannot be empty");
+        require(bytes(_muscleGroupName).length > 0, "_muscleGroupName is a required field and cannot be empty");
 
-        Exercise memory exercise = Exercise(_muscleGroupName, _category, _name, _description);
-        exercises[_name] = exercise;
+        require(keccak256(abi.encodePacked(exerciseCategoryMap[_category])) == keccak256(abi.encodePacked(_category)), "_category must match predfined set contained in exerciseCategory");
+        require(keccak256(abi.encodePacked(exerciseMuscleGroupMap[_muscleGroupName])) == keccak256(abi.encodePacked(_muscleGroupName)), "_muscleGroupName must match predfined set contained in exerciseMuscleGroup");
 
-        emit NewExerciseAdded(_muscleGroupName, _category, _name, _description);
+        Exercise memory exercise = Exercise(_muscleGroupName, _category, _name, _description, true);
+        exercises[_key] = exercise;
+
+        emit ExerciseUpserted(_key, _muscleGroupName, _category, _name, _description);
     }
 
-    function getExercise(string memory _name) public view returns (string memory, string memory, string memory, string memory) {
-        Exercise storage exercise = exercises[_name];
-        return (exercise.muscleGroup, exercise.category, exercise.name, exercise.description);
-    }
+    /**
+        @dev delete the exercise corresponding to the _key
+     */
+    function deleteExercise(string memory _key) public onlyOwner returns (bool) {
+        require(exercises[_key].isCreated == true, "Exercise must exist to be deleted");
 
-    function deleteExercise(string memory _name) public onlyOwner returns (bool) {
-        require(keccak256(abi.encodePacked(exercises[_name].name)) == keccak256(abi.encodePacked(_name)));
+        delete exercises[_key];
 
-        delete exercises[_name];
-
-        emit ExerciseDeleted(_name);
+        emit ExerciseDeleted(_key);
 
         return true;
+    }
+
+    /**
+        @dev return an exercise corresponding to the _key.  The order of the exercise elements returned is
+        muscleGroup, category, name and description
+     */
+    function getExercise(string memory _key) 
+        public 
+        view 
+        returns (
+            string memory,
+            string memory, 
+            string memory, 
+            string memory
+        )
+    {
+        Exercise storage exercise = exercises[_key];
+        return (exercise.muscleGroup, exercise.category, exercise.name, exercise.description);
     }
 
     function ownerOf() public view returns (address) {
