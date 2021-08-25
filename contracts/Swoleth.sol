@@ -8,8 +8,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  */
 contract Swoleth is Ownable {
 
-    event ExerciseUpserted(string muscleGroup, string category, string name, string description);
-    event ExerciseDeleted(string name);
+    event ExerciseUpserted(string key, string muscleGroup, string category, string name, string description);
+    event ExerciseDeleted(string key);
 
     // Respesents a single exercise
     struct Exercise {
@@ -17,6 +17,7 @@ contract Swoleth is Ownable {
         string category;
         string name;
         string description;
+        bool isCreated;
     }
 
     mapping (string => Exercise) public exercises;
@@ -48,6 +49,7 @@ contract Swoleth is Ownable {
         @dev function to add/update an exercise with a name, description, category and muscle group
      */
     function upsertExercise(
+        string memory _key,
         string memory _name, 
         string memory _description, 
         string memory _category, 
@@ -56,6 +58,7 @@ contract Swoleth is Ownable {
         public 
         onlyOwner
     {
+        require(bytes(_key).length > 0, "_key is a required field and cannot be empty");
         require(bytes(_name).length > 0, "_name is a required field and cannot be empty");
         require(bytes(_category).length > 0, "_category is a requires field and cannot be empty");
         require(bytes(_muscleGroupName).length > 0, "_muscleGroupName is a required field and cannot be empty");
@@ -63,30 +66,30 @@ contract Swoleth is Ownable {
         require(keccak256(abi.encodePacked(exerciseCategoryMap[_category])) == keccak256(abi.encodePacked(_category)), "_category must match predfined set contained in exerciseCategory");
         require(keccak256(abi.encodePacked(exerciseMuscleGroupMap[_muscleGroupName])) == keccak256(abi.encodePacked(_muscleGroupName)), "_muscleGroupName must match predfined set contained in exerciseMuscleGroup");
 
-        Exercise memory exercise = Exercise(_muscleGroupName, _category, _name, _description);
-        exercises[_name] = exercise;
+        Exercise memory exercise = Exercise(_muscleGroupName, _category, _name, _description, true);
+        exercises[_key] = exercise;
 
-        emit ExerciseUpserted(_muscleGroupName, _category, _name, _description);
+        emit ExerciseUpserted(_key, _muscleGroupName, _category, _name, _description);
     }
-    
+
     /**
-        @dev delete the exercise corresponding to the key _name
+        @dev delete the exercise corresponding to the _key
      */
-    function deleteExercise(string memory _name) public onlyOwner returns (bool) {
-        require(keccak256(abi.encodePacked(exercises[_name].name)) == keccak256(abi.encodePacked(_name)), "Exercise must exist to be deleted");
+    function deleteExercise(string memory _key) public onlyOwner returns (bool) {
+        require(exercises[_key].isCreated == true, "Exercise must exist to be deleted");
 
-        delete exercises[_name];
+        delete exercises[_key];
 
-        emit ExerciseDeleted(_name);
+        emit ExerciseDeleted(_key);
 
         return true;
     }
 
     /**
-        @dev return an exercise corresponding to the key _name.  The order of the exercise elements returned is
+        @dev return an exercise corresponding to the _key.  The order of the exercise elements returned is
         muscleGroup, category, name and description
      */
-    function getExercise(string memory _name) 
+    function getExercise(string memory _key) 
         public 
         view 
         returns (
@@ -96,7 +99,7 @@ contract Swoleth is Ownable {
             string memory
         )
     {
-        Exercise storage exercise = exercises[_name];
+        Exercise storage exercise = exercises[_key];
         return (exercise.muscleGroup, exercise.category, exercise.name, exercise.description);
     }
 
