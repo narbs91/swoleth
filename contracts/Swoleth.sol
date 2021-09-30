@@ -46,7 +46,7 @@ contract Swoleth is Ownable {
     }
 
     /**
-        @dev function to add/update an exercise with a name, description, category and muscle group
+        @dev function to add/update an exercise with a name, description, category and muscle group given a _key
      */
     function upsertExercise(
         string memory _key,
@@ -73,7 +73,7 @@ contract Swoleth is Ownable {
     }
 
     /**
-        @dev delete the exercise corresponding to the _key
+        @dev delete the exercise corresponding to _key
      */
     function deleteExercise(string memory _key) public onlyOwner returns (bool) {
         require(exercises[_key].isCreated == true, "Exercise must exist to be deleted");
