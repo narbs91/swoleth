@@ -4,7 +4,7 @@ pragma solidity >=0.8.0 <0.9.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
-    @dev Contract representing a decentralized database for exercises meant to be the source of truth for fitness based dApps
+    @dev A smart contract to represent a decentralized database of exercises for fitness dApps to use as a datasource
  */
 contract Swoleth is Ownable {
 
@@ -48,6 +48,7 @@ contract Swoleth is Ownable {
     /**
         @dev Add/update an exercise with a name, description, category and muscle group given a _key.  A update in this scenario is a full replace.
 
+        @param
         _key: The index to the exercise.  All _key's are of the format {Exercise name}-{Category} in lowercase, i.e bicep-curl-dumbbell or flat-bench-barbell
         _name: The Name of the exercise, i.e. Biscep Curl
         _description: The description of how to preform the exercise
@@ -81,6 +82,7 @@ contract Swoleth is Ownable {
     /**
         @dev Delete the exercise corresponding to _key
 
+        @param
         _key: The index to the exercise.  All _key's are of the format {Exercise name}-{Category} in lowercase, i.e bicep-curl-dumbbell or flat-bench-barbell
      */
     function deleteExercise(string memory _key) public onlyOwner returns (bool) {
@@ -96,7 +98,8 @@ contract Swoleth is Ownable {
     /**
         @dev Return the core components of an exercise corresponding to the _key.  The order of the exercise elements returned is
         muscleGroup, category, name and description
-
+        
+        @param
         _key: The index to the exercise.  All _key's are of the format {Exercise name}-{Category} in lowercase, i.e bicep-curl-dumbbell or flat-bench-barbell
      */
     function getExercise(string memory _key) 
@@ -115,7 +118,8 @@ contract Swoleth is Ownable {
 
     /**
         @dev Return the name of an exercise corresponding to the _key.
-
+        
+        @param
         _key: The index to the exercise.  All _key's are of the format {Exercise name}-{Category} in lowercase, i.e bicep-curl-dumbbell or flat-bench-barbell
      */
     function getExerciseName(string memory _key) public view returns (string memory)
@@ -138,6 +142,7 @@ contract Swoleth is Ownable {
     /**
         @dev Return the targeted muscle group of an exercise corresponding to the _key.
 
+        @param
         _key: The index to the exercise.  All _key's are of the format {Exercise name}-{Category} in lowercase, i.e bicep-curl-dumbbell or flat-bench-barbell
      */
     function getExerciseMuscleGroup(string memory _key) public view returns (string memory)
@@ -149,6 +154,7 @@ contract Swoleth is Ownable {
     /**
         @dev Return the category of an exercise corresponding to the _key.
 
+        @param
         _key: The index to the exercise.  All _key's are of the format {Exercise name}-{Category} in lowercase, i.e bicep-curl-dumbbell or flat-bench-barbell
      */
     function getExerciseCategory(string memory _key) public view returns (string memory)
