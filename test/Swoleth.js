@@ -12,8 +12,6 @@ contract('Swoleth', accounts => {
 
     beforeEach(async () => {
       swolethInstance = await Swoleth.new({from: alice});
-      //const gasPriceCreateContract = await Swoleth.new.estimateGas();
-      //console.log(gasPriceCreateContract);
     })
 
     context("Fresh contract deployment scenario", async () => {
@@ -29,7 +27,7 @@ contract('Swoleth', accounts => {
       });
 
       it("should have the correct owner", async () => {
-        const owner = await swolethInstance.ownerOf.call();
+        const owner = await swolethInstance.owner();
         expect(owner).to.equal(alice);
       })
     })
@@ -37,25 +35,35 @@ contract('Swoleth', accounts => {
     context("Creating new exercise and muscle group by owner", async () => {
       it("should insert an exercise and new muscle group", async () => {
         const exercise = {
-          name: "Biscep curl",
+          name: "Bicep curl",
           description: "Arm exercise",
           category: "DUMBBELL",
           muscleGroup: "ARMS"
         };
 
-        let result;
-        const key = "biscepCurl-DUMBBELL";
-        // const gasPriceCreateExercise = await swolethInstance.addExercise.estimateGas(exercise.name, exercise.description, exercise.category, exercise.muscleGroup);
-        // console.log(gasPriceCreateExercise);
+        const key = "bicep-curl-dumbbell";
 
-        result = await swolethInstance.upsertExercise(key, exercise.name, exercise.description, exercise.category, exercise.muscleGroup);
+        let result = await swolethInstance.upsertExercise(key, exercise.name, exercise.description, exercise.category, exercise.muscleGroup);
+
+        let exerciseName = await swolethInstance.getExerciseName(key);
+        let exerciseDescription = await swolethInstance.getExerciseDescription(key);
+        let exerciseMuscleGroup = await swolethInstance.getExerciseMuscleGroup(key);
+        let exerciseCategory = await swolethInstance.getExerciseCategory(key);
         
+        // Test add call response
         expect(result.receipt.status).to.equal(true, "Transaction was not successful");
         expect(result.logs[0].args.key).to.equal(key, "Incorrect exercise key was returned");
         expect(result.logs[0].args.muscleGroup).to.equal(exercise.muscleGroup, "Incorrect muscle group was returned");
         expect(result.logs[0].args.category).to.equal(exercise.category, "Incorrect exercise name was returned");
         expect(result.logs[0].args.name).to.equal(exercise.name, "Incorrect exercise name was returned");
         expect(result.logs[0].args.description).to.equal(exercise.description, "Incorrect exercise description was returned");
+
+        // Test fetching individual components of an exercise
+        expect(exerciseMuscleGroup).to.equal(exercise.muscleGroup, "Incorrect muscle group was returned");
+        expect(exerciseCategory).to.equal(exercise.category, "Incorrect exercise name was returned");
+        expect(exerciseName).to.equal(exercise.name, "Incorrect exercise name was returned");
+        expect(exerciseDescription).to.equal(exercise.description, "Incorrect exercise description was returned");
+
       });
 
       it("Creates multiple exercises for a single muscleGroup", async () => {
@@ -125,8 +133,8 @@ contract('Swoleth', accounts => {
           muscleGroup: BACK
         };
 
-        const flatBenchKey = "flat-bench-DUMBBELL";
-        const deadliftKey = "deadlift-BARBELL";
+        const flatBenchKey = "flat-bench-dumbbell";
+        const deadliftKey = "deadlift-barbell";
 
         result1 = await instance.upsertExercise(flatBenchKey, flatBenchPress.name, flatBenchPress.description, flatBenchPress.category, flatBenchPress.muscleGroup);
         expect(result1.logs[0].event).to.equal(ExerciseUpsertedEvent, "Incorrect event emitted for upsert event");
@@ -150,7 +158,7 @@ contract('Swoleth', accounts => {
     })
 
 
-    context("Tesing updating an exercise", async () => {
+    context("Testing updating an exercise", async () => {
 
       const flatBenchPressVersion1 = {
         name: "Bench press(flat)",
@@ -166,7 +174,7 @@ contract('Swoleth', accounts => {
         muscleGroup: "CHEST"
       };
 
-      const flatBenchKey = "flat-bench-DUMBBELL";
+      const flatBenchKey = "flat-bench-dumbbell";
 
       it("should update an exercise", async () => {
         const instance = swolethInstance;
@@ -236,7 +244,7 @@ contract('Swoleth', accounts => {
         muscleGroup: "BACK"
       }
 
-      const squatKey = "squat-BARBELL"
+      const squatKey = "squat-barbell"
 
       it("deletes an exercise", async () => {
         const instance = swolethInstance;

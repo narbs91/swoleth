@@ -4,7 +4,7 @@ pragma solidity >=0.8.0 <0.9.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
-    @dev contract representing a decentralized database for exercises meant to be the source of truth for fitness based dApps
+    @dev Contract representing a decentralized database for exercises meant to be the source of truth for fitness based dApps
  */
 contract Swoleth is Ownable {
 
@@ -26,16 +26,16 @@ contract Swoleth is Ownable {
     mapping (string => string) public exerciseCategoryMap;
     mapping (string => string) public exerciseMuscleGroupMap;
 
-    address public _owner;
-
     constructor() {
-        _owner  = msg.sender;
 
         exerciseCategoryMap["MACHINE"] = "MACHINE";
         exerciseCategoryMap["BARBELL"] = "BARBELL";
         exerciseCategoryMap["DUMBBELL"] = "DUMBBELL";
         exerciseCategoryMap["BODYWEIGHT"] = "BODYWEIGHT";
         exerciseCategoryMap["BANDS"] = "BANDS";
+        exerciseCategoryMap["CARDIO"] = "CARDIO";
+        exerciseCategoryMap["TIMED"] = "TIMED";
+        exerciseCategoryMap["OTHER"] = "OTHER";
         
         exerciseMuscleGroupMap["BACK"] = "BACK";
         exerciseMuscleGroupMap["CHEST"] = "CHEST";
@@ -46,7 +46,13 @@ contract Swoleth is Ownable {
     }
 
     /**
-        @dev function to add/update an exercise with a name, description, category and muscle group given a _key
+        @dev Add/update an exercise with a name, description, category and muscle group given a _key.  A update in this scenario is a full replace.
+
+        _key: The index to the exercise.  All _key's are of the format {Exercise name}-{Category} in lowercase, i.e bicep-curl-dumbbell or flat-bench-barbell
+        _name: The Name of the exercise, i.e. Biscep Curl
+        _description: The description of how to preform the exercise
+        _category: The category of exercise which corresponds to the what will be used to preform it, i.e DUMBBELL
+        _muscleGroupName: The name of the main muscle group the exercise targets, i.e CHEST
      */
     function upsertExercise(
         string memory _key,
@@ -73,7 +79,9 @@ contract Swoleth is Ownable {
     }
 
     /**
-        @dev delete the exercise corresponding to _key
+        @dev Delete the exercise corresponding to _key
+
+        _key: The index to the exercise.  All _key's are of the format {Exercise name}-{Category} in lowercase, i.e bicep-curl-dumbbell or flat-bench-barbell
      */
     function deleteExercise(string memory _key) public onlyOwner returns (bool) {
         require(exercises[_key].isCreated == true, "Exercise must exist to be deleted");
@@ -86,8 +94,10 @@ contract Swoleth is Ownable {
     }
 
     /**
-        @dev return an exercise corresponding to the _key.  The order of the exercise elements returned is
+        @dev Return the core components of an exercise corresponding to the _key.  The order of the exercise elements returned is
         muscleGroup, category, name and description
+
+        _key: The index to the exercise.  All _key's are of the format {Exercise name}-{Category} in lowercase, i.e bicep-curl-dumbbell or flat-bench-barbell
      */
     function getExercise(string memory _key) 
         public 
@@ -103,7 +113,47 @@ contract Swoleth is Ownable {
         return (exercise.muscleGroup, exercise.category, exercise.name, exercise.description);
     }
 
-    function ownerOf() public view returns (address) {
-        return _owner;
+    /**
+        @dev Return the name of an exercise corresponding to the _key.
+
+        _key: The index to the exercise.  All _key's are of the format {Exercise name}-{Category} in lowercase, i.e bicep-curl-dumbbell or flat-bench-barbell
+     */
+    function getExerciseName(string memory _key) public view returns (string memory)
+    {
+        Exercise storage exercise = exercises[_key];
+        return exercise.name;
+    }
+
+    /**
+        @dev Return the description of how to prefrom an exercise corresponding to the _key
+
+        _key: The index to the exercise.  All _key's are of the format {Exercise name}-{Category} in lowercase, i.e bicep-curl-dumbbell or flat-bench-barbell
+     */
+    function getExerciseDescription(string memory _key) public view returns (string memory)
+    {
+        Exercise storage exercise = exercises[_key];
+        return exercise.description;
+    }
+
+    /**
+        @dev Return the targeted muscle group of an exercise corresponding to the _key.
+
+        _key: The index to the exercise.  All _key's are of the format {Exercise name}-{Category} in lowercase, i.e bicep-curl-dumbbell or flat-bench-barbell
+     */
+    function getExerciseMuscleGroup(string memory _key) public view returns (string memory)
+    {
+        Exercise storage exercise = exercises[_key];
+        return exercise.muscleGroup;
+    }
+
+    /**
+        @dev Return the category of an exercise corresponding to the _key.
+
+        _key: The index to the exercise.  All _key's are of the format {Exercise name}-{Category} in lowercase, i.e bicep-curl-dumbbell or flat-bench-barbell
+     */
+    function getExerciseCategory(string memory _key) public view returns (string memory)
+    {
+        Exercise storage exercise = exercises[_key];
+        return exercise.category;
     }
 }
