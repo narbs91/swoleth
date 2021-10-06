@@ -24,7 +24,7 @@ const HDWalletProvider = require('@truffle/hdwallet-provider');
 require('dotenv').config()
 
 const RINKEBY_RPC_URL = process.env.RINKEBY_RPC_URL
-const MNEMONIC = process.env.MNEMONIC
+const MNEMONIC = process.env.SWOLEMNEMONIC
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY
 
 module.exports = {
