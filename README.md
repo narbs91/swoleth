@@ -10,4 +10,4 @@ Rinkeby testnet deployment: https://rinkeby.etherscan.io/address/0x0F811E45dfd3c
 2. `truffle compile`
 3. `truffle dev`
 4. `truffle test`
-5. `truffle deploy --network rinkeby"
+5. `truffle deploy --network rinkeby`
